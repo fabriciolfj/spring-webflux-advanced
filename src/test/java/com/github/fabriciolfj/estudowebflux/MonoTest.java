@@ -1,10 +1,14 @@
 package com.github.fabriciolfj.estudowebflux;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
+import reactor.blockhound.BlockHound;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import java.time.Duration;
 
 @Slf4j
 /**
@@ -24,10 +28,29 @@ import reactor.test.StepVerifier;
  * Publisher -> onNext (vai chamar o onnext) Subscriber
  * until:
  * 1. Publisher send all the objects requested. (manda a quantidade de objetos requeridos, defino o backpressure)
- * 2. Publisher envia todos os objetos (quando o subscriber não define o backpressure), então o fluxo e concluido (onComplete) e o subscriber, subscription, serão cancelados
+ * 2. Publisher envia todos os objetos (quando o subscriber não define o backpressure), então o fluxo e concluido (onComplete é chamado) e o subscriber, subscription, serão cancelados
  * 3. Quando ocorre um erro. (onError) o subscriber e subscription, serão cancelados
  */
 public class MonoTest {
+
+    //https://github.com/reactor/BlockHound
+    @BeforeAll
+    public static void setup() {
+        BlockHound.install(); //testar se nao estamos bloqueando alguma thread.
+    }
+
+    @Test
+    public void blockHoundWorks() {
+        Mono.delay(Duration.ofSeconds(1))
+                .doOnNext(it -> {
+                    try {
+                        Thread.sleep(10);
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                });//.block();
+    }
 
     @Test
     public void monoSubscriber() {
@@ -99,7 +122,7 @@ public class MonoTest {
         mono.subscribe(s -> log.info("Value {}", s)
                 , Throwable::printStackTrace
                 , () -> log.info("Finished!")
-                ,subscription -> subscription.request(5));// se ele emitir 300, vou conseguir consumir 5 em 5., nao faz sentido usar em um mono apenas em flux
+                ,subscription -> subscription.request(5));// se ele emitir 300, vou querer 5
         //Subscription::cancel); // da um clean em tudo que foi feito
         log.info("----------------");
 
