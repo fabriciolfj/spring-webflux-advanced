@@ -30,7 +30,8 @@ public class AnimeService {
     }
 
     public Mono<Anime> save(final Anime anime) {
-        return animeRepository.save(anime);
+        return animeRepository.save(anime)
+                .onErrorMap(e -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Fail save anime. Details: " +e.getMessage()));
     }
 
     public Mono<Void> update(final int id, final Anime anime) {

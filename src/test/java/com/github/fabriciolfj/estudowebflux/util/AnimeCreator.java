@@ -23,4 +23,11 @@ public class AnimeCreator {
                 .id(1)
                 .build();
     }
+
+    public static Anime createAnimeInvalid() {
+        return Anime.builder()
+                .name("")
+                .id(1)
+                .build();
+    }
 }
