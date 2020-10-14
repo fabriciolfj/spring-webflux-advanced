@@ -19,6 +19,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.Duration;
+import java.util.List;
 
 @ExtendWith(SpringExtension.class)
 class AnimeControllerTest {
@@ -30,6 +31,7 @@ class AnimeControllerTest {
     private AnimeService animeService;
 
     private final Anime anime = AnimeCreator.createValidAnime();
+    private final List<Anime> animes = List.of(anime, anime);
 
     @BeforeAll
     public static void setup() {
@@ -54,11 +56,10 @@ class AnimeControllerTest {
         BDDMockito.when(animeService.findAll()).thenReturn(Flux.just(anime));
         BDDMockito.when(animeService.findById(ArgumentMatchers.anyInt())).thenReturn(Mono.just(anime));
         BDDMockito.when(animeService.save(AnimeCreator.createAnimeToBeSaved())).thenReturn(Mono.just(anime));
-        BDDMockito.when(animeService.delete(ArgumentMatchers.anyInt()))
-                .thenReturn(Mono.empty());
-
+        BDDMockito.when(animeService.delete(ArgumentMatchers.anyInt())).thenReturn(Mono.empty());
         BDDMockito.when(animeService.save(AnimeCreator.createValidAnime())).thenReturn(Mono.just(anime));
         BDDMockito.when(animeService.update(1, AnimeCreator.createValidAnime())).thenReturn(Mono.empty());
+        BDDMockito.when(animeService.saveBatch(animes)).thenReturn(Flux.just(anime, anime));
     }
 
     @Test
@@ -121,6 +122,16 @@ class AnimeControllerTest {
     public void update_ReturnMonoEmpty_WhenSuccessful() {
         StepVerifier.create(animeController.update(1, AnimeCreator.createValidAnime()))
                 .expectSubscription()
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Create of list anime")
+    public void created_ReturnListOfAnime_WhenSuccessful() {
+        final Anime animeToBeSaved = AnimeCreator.createAnimeToBeSaved();
+        StepVerifier.create(animeService.saveBatch(animes))
+                .expectSubscription()
+                .expectNext(anime, anime)
                 .verifyComplete();
     }
 

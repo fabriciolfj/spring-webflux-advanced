@@ -20,6 +20,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.Duration;
+import java.util.List;
 
 @ExtendWith(SpringExtension.class)
 class AnimeServiceTest {
@@ -31,6 +32,7 @@ class AnimeServiceTest {
     private AnimeRepository animeRepository;
 
     private final Anime anime = AnimeCreator.createValidAnime();
+    private final List<Anime> animes = List.of(anime, anime);
 
     @BeforeAll
     public static void setup() {
@@ -55,10 +57,9 @@ class AnimeServiceTest {
         BDDMockito.when(animeRepository.findAll()).thenReturn(Flux.just(anime));
         BDDMockito.when(animeRepository.findById(ArgumentMatchers.anyInt())).thenReturn(Mono.just(anime));
         BDDMockito.when(animeRepository.save(AnimeCreator.createAnimeToBeSaved())).thenReturn(Mono.just(anime));
-        BDDMockito.when(animeRepository.delete(ArgumentMatchers.any(Anime.class)))
-                .thenReturn(Mono.empty());
-
+        BDDMockito.when(animeRepository.delete(ArgumentMatchers.any(Anime.class))).thenReturn(Mono.empty());
         BDDMockito.when(animeRepository.save(AnimeCreator.createValidAnime())).thenReturn(Mono.just(anime));
+        BDDMockito.when(animeRepository.saveAll(animes)).thenReturn(Flux.just(anime, anime));
     }
 
     @Test
@@ -98,6 +99,31 @@ class AnimeServiceTest {
                 .expectSubscription()
                 .expectNext(anime)
                 .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Create of list anime")
+    public void created_ReturnListOfAnime_WhenSuccessful() {
+        final Anime animeToBeSaved = AnimeCreator.createAnimeToBeSaved();
+        StepVerifier.create(animeService.saveBatch(animes))
+                .expectSubscription()
+                .expectNext(anime, anime)
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("saveAll returns mono error when one of the objects list contains name is empty")
+    public void created_ReturnMonoErrorSaveAll_WhenSuccessful() {
+        final Anime anime = AnimeCreator.createValidAnime();
+        final Anime animeNotName = AnimeCreator.createAnimeNotName();
+
+        BDDMockito.when(animeRepository.saveAll(ArgumentMatchers.anyIterable())).thenReturn(Flux.just(anime, animeNotName));
+
+        StepVerifier.create(animeService.saveBatch(animes))
+                .expectSubscription()
+                .expectNext(anime)
+                .expectError(ResponseStatusException.class)
+                .verify();
     }
 
     @Test

@@ -17,6 +17,13 @@ public class AnimeCreator {
                 .build();
     }
 
+    public static Anime createAnimeNotName() {
+        return Anime.builder()
+                .name("")
+                .id(1)
+                .build();
+    }
+
     public static Anime createValidUpdatedAnime() {
         return Anime.builder()
                 .name("Tensei")
